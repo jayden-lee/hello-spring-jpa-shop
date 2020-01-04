@@ -1,13 +1,13 @@
-package com.jayden.hellospringjpashop;
+package com.jayden.shop;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class HelloSpringJpaShopApplication {
+public class ShopApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(HelloSpringJpaShopApplication.class, args);
+		SpringApplication.run(ShopApplication.class, args);
 	}
 
 }
