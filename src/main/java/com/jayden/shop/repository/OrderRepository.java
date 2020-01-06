@@ -1,9 +1,7 @@
 package com.jayden.shop.repository;
 
 import com.jayden.shop.domain.Order;
-import com.jayden.shop.domain.*;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.jayden.shop.domain.OrderSearch;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
@@ -19,10 +17,6 @@ import java.util.List;
 public class OrderRepository {
 
     private final EntityManager em;
-    private final JPAQueryFactory query;
-
-    private QOrder order = QOrder.order;
-    private QMember member = QMember.member;
 
     public void save(Order order) {
         em.persist(order);
@@ -94,7 +88,7 @@ public class OrderRepository {
         return query.getResultList();
     }
 
-    public List<Order> findAll(OrderSearch orderSearch) {
+   /* public List<Order> findAll(OrderSearch orderSearch) {
         return query
             .select(order)
             .from(order)
@@ -117,5 +111,5 @@ public class OrderRepository {
             return null;
         }
         return member.name.like("%" + nameCond + "%");
-    }
+    }*/
 }
