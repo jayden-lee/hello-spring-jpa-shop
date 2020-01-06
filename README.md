@@ -6,6 +6,11 @@
 ./gradlew dependencies --configuration compileClasspath
 ```
 
+## Docker MySQL 설치
+```
+docker run -d --name test_mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=admin007! mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+```
+
 ## 엔티티 설계시 주의점
 1. 가급적 <code>Setter</code>를 사용하지 말자
 2. 모든 연관관계는 <code>지연로딩(Lazy)</code>으로 설정하자
