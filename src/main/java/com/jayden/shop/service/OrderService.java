@@ -1,9 +1,6 @@
 package com.jayden.shop.service;
 
-import com.jayden.shop.domain.Delivery;
-import com.jayden.shop.domain.Member;
-import com.jayden.shop.domain.Order;
-import com.jayden.shop.domain.OrderItem;
+import com.jayden.shop.domain.*;
 import com.jayden.shop.domain.item.Item;
 import com.jayden.shop.repository.ItemRepository;
 import com.jayden.shop.repository.MemberRepository;
@@ -11,6 +8,8 @@ import com.jayden.shop.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -60,4 +59,7 @@ public class OrderService {
         return order.getId();
     }
 
+    public List<Order> findOrders(OrderSearch orderSearch) {
+        return orderRepository.findAllByString(orderSearch);
+    }
 }
