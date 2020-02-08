@@ -1,5 +1,5 @@
 # Hello Spring JPA Shop
-> 인프런 실전 스프링 부트와 JPA 활용1 강의를 학습하면서 정리하는 Repo
+> 인프런 실전 스프링 부트와 JPA 활용 1,2 강의를 학습하면서 정리하는 Repo
 
 ## Gradle 의존관계 보기
 ```

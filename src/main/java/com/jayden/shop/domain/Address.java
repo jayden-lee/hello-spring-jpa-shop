@@ -1,6 +1,5 @@
 package com.jayden.shop.domain;
 
-import lombok.Builder;
 import lombok.Getter;
 
 import javax.persistence.Embeddable;
