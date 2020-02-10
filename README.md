@@ -208,3 +208,42 @@ inner join
 2. 성능 최적화가 필요하면 페치 조인을 사용한다.
 3. DTO로 직접 조회하는 방법을 통해 조회하는 컬럼 개수를 줄인다.
 4. JPA가 제공하는 네이티브 SQL 또는 JDBC Template을 사용해서 SQL을 직접 사용한다.
+
+## 컬렉션 조회 최적화
+
+### Fetch Join
+OneToMany 관계의 엔티티들을 <code>Fetch Join</code> 하게 되면, 결과값으로는 One에 해당하는 엔티티 정보가 Many 개수만큼 나오게 된다.
+
+<code>orders</code>와 <code>order_item</code> 두 테이블을 조인하면 4개의 레코드가 출력된다. 현재 데이터는 orders 테이블에는 행 2개, order_items 테이블에는 행 4개가 있다.
+
+<img width="800" alt="order_join_orderitem" src="https://user-images.githubusercontent.com/43853352/74144425-0bee3580-4c40-11ea-8208-4b9cb6d6ae16.png">
+
+다음과 같이 작성한 코드를 실행하면 반환값으로 Order 엔티티 4개를 갖고 있는 리스트가 반환된다. 실제 필요한 Order 엔티티는 2개임에도 불구하고 중복을 포함해서 4개의 엔티티가 반환된다.
+
+```java
+public List<Order> findAllWithItems() {
+    return em.createQuery(
+        "select o from Order o " +
+            "join fetch o.member m " +
+            "join fetch o.delivery d " +
+            "join fetch o.orderItems oi " +
+            "join fetch oi.item i", Order.class
+    ).getResultList();
+}
+```
+
+이를 해결하기 위해서 queryString 값에 <code>distinct</code> 키워드를 추가한다. jpa에는 distinct 키워드가 있으면 중복 엔티티를 제거해주고, DB에 날리는 쿼리에도 distinct 문장을 추가해준다.
+
+```java
+public List<Order> findAllWithItems() {
+    return em.createQuery(
+        "select distinct o from Order o " +
+            "join fetch o.member m " +
+            "join fetch o.delivery d " +
+            "join fetch o.orderItems oi " +
+            "join fetch oi.item i", Order.class
+    ).getResultList();
+}
+```
+
+> 일대다 관계에서 Fetch Join 하게 되면 페이징 쿼리가 불가능한 단점이 있다. 페이징 쿼리를 날리기 위해서 offset, limit을 설정하면 하이버네이트는 경고 로그를 남기고 메모리에서 페이징을 한다. 실제 DB에 실행되는 쿼리에도 페이징 정보가 담기지 않고 모든 정보를 가져온다.
