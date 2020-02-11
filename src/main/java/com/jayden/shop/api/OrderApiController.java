@@ -6,13 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,6 +48,16 @@ public class OrderApiController {
     @GetMapping("/api/v3/orders")
     public Result ordersV3() {
         List<Order> orders = orderRepository.findAllWithItems();
+        List<OrderDto> data = orders.stream().map(OrderDto::new)
+            .collect(toList());
+
+        return new Result(data, data.size());
+    }
+
+    @GetMapping("/api/v4/orders")
+    public Result ordersV4(@RequestParam(value = "offset", defaultValue = "0") int offset,
+                           @RequestParam(value = "limit", defaultValue = "100") int limit) {
+        List<Order> orders = orderRepository.findAll(offset, limit);
         List<OrderDto> data = orders.stream().map(OrderDto::new)
             .collect(toList());
 

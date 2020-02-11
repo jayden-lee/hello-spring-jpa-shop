@@ -247,3 +247,48 @@ public List<Order> findAllWithItems() {
 ```
 
 > 일대다 관계에서 Fetch Join 하게 되면 페이징 쿼리가 불가능한 단점이 있다. 페이징 쿼리를 날리기 위해서 offset, limit을 설정하면 하이버네이트는 경고 로그를 남기고 메모리에서 페이징을 한다. 실제 DB에 실행되는 쿼리에도 페이징 정보가 담기지 않고 모든 정보를 가져온다.
+
+### 페이징과 한계 돌파
+컬렉션은 지연 로딩으로 조회해서 페이징 처리를 한다. 지연 로딩 최적화와 페이징을 위해서 <code>hibernate.default_batch_fetch_size</code> 또는 <code>@BatchSize</code>를 적용한다.
+
+주문과 주문 목록은 일대다 관계이므로 지연 로딩을 통해 조회한다. 객체 그래프로 탐색하는 순간에 주문 목록에 해당하는 쿼리를 실행하는데, 위에서 말한 옵션을 활성화하면 주문 목록 아이템을 정해진 크기만큼 한번에 조회하는 쿼리를 실행한다.
+
+```sql
+# order_item 조회
+select
+    orderitems0_.order_id as order_id5_5_1_,
+    orderitems0_.order_item_id as order_it1_5_1_,
+    orderitems0_.order_item_id as order_it1_5_0_,
+    orderitems0_.count as count2_5_0_,
+    orderitems0_.item_id as item_id4_5_0_,
+    orderitems0_.order_id as order_id5_5_0_,
+    orderitems0_.order_price as order_pr3_5_0_ 
+from
+    order_item orderitems0_ 
+where
+    orderitems0_.order_id in (
+        ?, ?
+    );
+
+# item 조회
+select
+    item0_.item_id as item_id2_3_0_,
+    item0_.name as name3_3_0_,
+    item0_.price as price4_3_0_,
+    item0_.stock_quantity as stock_qu5_3_0_,
+    item0_.actor as actor6_3_0_,
+    item0_.director as director7_3_0_,
+    item0_.artist as artist8_3_0_,
+    item0_.etc as etc9_3_0_,
+    item0_.author as author10_3_0_,
+    item0_.isbn as isbn11_3_0_,
+    item0_.dtype as dtype1_3_0_ 
+from
+    item item0_ 
+where
+    item0_.item_id in (
+        ?, ?, ?, ?
+    )
+```
+
+> xToOne 관계는 <code>Fetch Join</code>으로 조회 최적화를 적용하고, xToMany 관계에서는 지연 로딩과 <code>hibernate.default_batch_fetch_size</code> 또는 <code>@BatchSize</code>를 적용해서 조회 성능을 최적화한다.
