@@ -292,3 +292,74 @@ where
 ```
 
 > xToOne 관계는 <code>Fetch Join</code>으로 조회 최적화를 적용하고, xToMany 관계에서는 지연 로딩과 <code>hibernate.default_batch_fetch_size</code> 또는 <code>@BatchSize</code>를 적용해서 조회 성능을 최적화한다.
+
+### 컬렉션 조회 최적화
+XToOne 관계는 Fetch Join을 이용해서 가져오고, XToMany 관계인 엔티티의 경우에 지연 로딩을 통해서 정보를 가져온다. 아래 코드에서 <code>findOrderItemMap</code> 메서드는 주문 아이템 목록을 1번의 쿼리를 통해 모두 가져온다. 단순히 반복문을 돌려서 주문 아이템 정보를 가져오게 되면 N + 1 문제가 발생한다.
+
+```java
+@Repository
+@RequiredArgsConstructor
+public class OrderQueryRepository {
+
+    private final EntityManager em;
+
+    public List<OrderQueryDto> findAll() {
+        List<OrderQueryDto> result = findOrders();
+
+        List<Long> orderIds = toOrderIds(result);
+
+        // 주문 아이템 목록을 1번의 쿼리로 가져와서 메모리에서 처리한다
+        Map<Long, List<OrderItemQueryDto>> orderItemMap = findOrderItemMap(orderIds);
+
+        result.forEach(o -> o.setOrderItems(orderItemMap.get(o.getOrderId())));
+
+        return result;
+    }
+    private List<OrderQueryDto> findOrders() {
+        return em.createQuery(
+            "select new com.jayden.shop.repository.order.OrderQueryDto(o.id, m.name, o.orderDate, o.status, d.address) from Order o " +
+                "join o.member m " +
+                "join o.delivery d", OrderQueryDto.class)
+            .getResultList();
+    }
+
+    private Map<Long, List<OrderItemQueryDto>> findOrderItemMap(List<Long> orderIds) {
+        List<OrderItemQueryDto> orderItems = em.createQuery(
+            "select new com.jayden.shop.repository.order.OrderItemQueryDto(oi.order.id, i.name, oi.orderPrice, oi.count) from OrderItem oi " +
+                "join oi.item i " +
+                "where oi.order.id in :orderIds", OrderItemQueryDto.class)
+            .setParameter("orderIds", orderIds)
+            .getResultList();
+
+        return orderItems.stream()
+            .collect(Collectors.groupingBy(OrderItemQueryDto::getOrderId));
+    }
+
+    private List<Long> toOrderIds(List<OrderQueryDto> result) {
+        return result.stream()
+                .map(o -> o.getOrderId())
+                .collect(Collectors.toList());
+    }
+
+}
+```
+
+### 플랫 데이터 최적화
+단 1번의 쿼리로 모든 데이터를 가져온다. 조인으로 인해서 중복 데이터가 반환되기 때문에 메모리에서 중복을 제거하는 로직이 추가되어야 한다. 조인된 쿼리를 실행하기 때문에 원하는대로 페이징 처리가 불가능하다.
+
+```java
+// 주문과 주문 아이템 정보를 하나의 클래스에 Flat하게 모두 담는다.
+List<OrderFlatDto> flats = orderQueryRepository.findAllByDtoFlat();
+
+// 조인된 결과 데이터를 메모리에서 그룹핑 로직을 추가하면서 중복 데이터를 제거하고 API 스펙에 맞게 변경한다.
+List<OrderQueryDto> data = flats.stream()
+    .collect(groupingBy(o -> new OrderQueryDto(o.getOrderId(),
+            o.getName(), o.getOrderDate(), o.getOrderStatus(), o.getAddress()),
+        mapping(o -> new OrderItemQueryDto(o.getOrderId(),
+            o.getItemName(), o.getOrderPrice(), o.getCount()), toList())
+    )).entrySet().stream()
+    .map(e -> new OrderQueryDto(e.getKey().getOrderId(),
+        e.getKey().getName(), e.getKey().getOrderDate(), e.getKey().getOrderStatus(),
+        e.getKey().getAddress(), e.getValue()))
+    .collect(toList());
+```
